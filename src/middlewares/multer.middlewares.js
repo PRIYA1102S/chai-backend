@@ -21,12 +21,28 @@ const __dirname = path.dirname(__filename);
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "../../public/temp")); // Absolute path works now
+    const tempPath = path.join(__dirname, "../../public/temp");
+    console.log("Multer saving file to:", tempPath);
+    cb(null, tempPath);
   },
   filename: function (req, file, cb) {
+    console.log("Multer filename:", file.originalname);
     cb(null, file.originalname);
   }
 });
 
-export const upload = multer({ storage });
+export const upload = multer({ 
+  storage,
+  fileFilter: function (req, file, cb) {
+    // Check file type
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'), false);
+    }
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
 
