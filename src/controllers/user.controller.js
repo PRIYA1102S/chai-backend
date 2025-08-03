@@ -3,6 +3,8 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/users.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 
 const generateAccessTokenAndRefreshToken = async (userId) => {
@@ -284,7 +286,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
           secure: true
       }
   
-      const {accessToken, newRefreshToken} = await generateAccessAndRefereshTokens(user._id)
+      const {accessToken, newRefreshToken} = await generateAccessTokenAndRefreshToken(user._id)
   
       return res
       .status(200)
@@ -304,7 +306,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 })
 
 
-const changeCurrentPassword = asyncHandler(async(req,res)) => {
+const changeCurrentPassword = asyncHandler(async(req,res) => {
   const {oldPassword,newPassword} = req.body
 
   const user = await User.findById(req.user?._id)
@@ -321,15 +323,15 @@ const changeCurrentPassword = asyncHandler(async(req,res)) => {
   return res
   .status(200)
   .json(new ApiResponse(200, {} ,"Password changed successfully."))
-}
+})
 
 
 
-const getCurrentUser = asyncHandler(async(req,res)) => {
+const getCurrentUser = asyncHandler(async(req,res) => {
   return res
   .status(200)
   .json(200,req.user,"current user fetched successfully.")
-}
+})
 
 
 const updateAccountDetails = asyncHandler(async(req,res) => {
@@ -340,7 +342,7 @@ const updateAccountDetails = asyncHandler(async(req,res) => {
     throw new ApiError(400,"All fields are required")
   }
 
-const user = User.findByIdAndUpdate(req.user?._id,
+const user = await User.findByIdAndUpdate(req.user?._id,
 {
   $set:{
     fullName,
@@ -352,7 +354,7 @@ const user = User.findByIdAndUpdate(req.user?._id,
 
 return res
 .status(200)
-.json(new ApiResponse(200,user,"Account details updated successfully"))
+.json(new ApiResponse(200,user.toObject(),"Account details updated successfully"))
 });
 
 
@@ -463,15 +465,17 @@ const getUserChannelProfile = asyncHandler(async(req,res) => {
           }
         }
       },
-      $project: {
-        fullName: 1,
-        username: 1,
-        subscribersCount: 1,
-        channelSubscribedToCount: 1,
-        isSubscribed: 1,
-        avatar: 1,
-        coverImage: 1,
-        email: 1
+      {
+        $project: {
+          fullName: 1,
+          username: 1,
+          subscribersCount: 1,
+          channelSubscribedToCount: 1,
+          isSubscribed: 1,
+          avatar: 1,
+          coverImage: 1,
+          email: 1
+        }
       }
     ])
 
