@@ -25,21 +25,9 @@ const generateAccessTokenAndRefreshToken = async (userId) => {
 
 
 const registerUser = asyncHandler(async (req, res) => {
-    console.log("=== REQUEST DEBUG INFO ===");
-    console.log("FILES RECEIVED ===>", req.files);
-    console.log("BODY RECEIVED ===>", req.body);
-    console.log("HEADERS ===>", req.headers);
-    console.log("CONTENT-TYPE ===>", req.get('Content-Type'));
-    
-    // Debug environment variables
-    console.log("Cloudinary Config Check:");
-    console.log("CLOUDINARY_CLOUD_NAME:", process.env.CLOUDINARY_CLOUD_NAME ? "Set" : "Not set");
-    console.log("CLOUDINARY_API_KEY:", process.env.CLOUDINARY_API_KEY ? "Set" : "Not set");
-    console.log("CLOUDINARY_API_SECRET:", process.env.CLOUDINARY_API_SECRET ? "Set" : "Not set");
 
   const { fullName, email, username, password } = req.body;
-  console.log("email", email);
-
+ 
   if (
     [fullName, email, username, password].some((field) => field?.trim() === "")
   ) {
@@ -62,14 +50,9 @@ const registerUser = asyncHandler(async (req, res) => {
   const avatarFileArray = req.files?.avatar;
   const coverImageArray = req.files?.coverImage;
 
-  console.log("Avatar file array:", avatarFileArray);
-  console.log("Cover image array:", coverImageArray);
-
   const avatarLocalPath = avatarFileArray?.[0]?.path;
   const coverImageLocalPath = coverImageArray?.[0]?.path;
 
-  console.log("Avatar local path:", avatarLocalPath);
-  console.log("Cover image local path:", coverImageLocalPath);
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is required.");
@@ -78,26 +61,11 @@ const registerUser = asyncHandler(async (req, res) => {
   // Check if the file actually exists on disk
   const fs = await import('fs');
   if (!fs.existsSync(avatarLocalPath)) {
-    console.error(`Avatar file does not exist at path: ${avatarLocalPath}`);
     throw new ApiError(400, "Avatar file was not saved properly. Please try again.");
   }
 
-  console.log(`Avatar file exists at: ${avatarLocalPath}`);
-  console.log(`Avatar file size: ${fs.statSync(avatarLocalPath).size} bytes`);
-
-  console.log("About to upload avatar to Cloudinary...");
   const avatar = await uploadOnCloudinary(avatarLocalPath);
-  console.log("Avatar upload result:", avatar);
-  
-  // Check if avatar file still exists after upload attempt
-  console.log("Avatar file exists after upload attempt:", fs.existsSync(avatarLocalPath));
-  
-  console.log("About to upload cover image to Cloudinary...");
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
-  console.log("Cover image upload result:", coverImage);
-  
-  // Check if cover image file still exists after upload attempt
-  console.log("Cover image file exists after upload attempt:", coverImageLocalPath ? fs.existsSync(coverImageLocalPath) : "No cover image");
 
   if (!avatar) {
     console.error("Avatar upload failed - returning error to client");
@@ -107,11 +75,10 @@ const registerUser = asyncHandler(async (req, res) => {
       throw new ApiError(400, "Cloudinary is not configured. Please set up your CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables.");
     }
     
-    // For debugging, let's create a temporary user without Cloudinary upload
-    console.log("Creating user with local file path for debugging...");
+
     const user = await User.create({
       fullName,
-      avatar: avatarLocalPath, // Use local path temporarily
+      avatar: avatarLocalPath, 
       coverImage: coverImageLocalPath || "",
       email,
       password,
